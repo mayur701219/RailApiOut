@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34009.444
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rail.ApiOut", "Rail.ApiOut\Rail.ApiOut.csproj", "{2DCC36CA-3A86-4AD7-B749-7622313D8388}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rail.BO", "RailBO\Rail.BO.csproj", "{499B9C57-59AD-4173-B150-22239433C0CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2DCC36CA-3A86-4AD7-B749-7622313D8388}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DCC36CA-3A86-4AD7-B749-7622313D8388}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DCC36CA-3A86-4AD7-B749-7622313D8388}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DCC36CA-3A86-4AD7-B749-7622313D8388}.Release|Any CPU.Build.0 = Release|Any CPU
+		{499B9C57-59AD-4173-B150-22239433C0CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{499B9C57-59AD-4173-B150-22239433C0CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{499B9C57-59AD-4173-B150-22239433C0CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{499B9C57-59AD-4173-B150-22239433C0CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {85DFFA0A-448F-4DF6-8E2D-A963AF981852}
+	EndGlobalSection
+EndGlobal
