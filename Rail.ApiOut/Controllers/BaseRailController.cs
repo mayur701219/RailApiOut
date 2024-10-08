@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Rail.ApiOut.IServices;
+using Rail.BO.ApiOutModels;
 
 namespace Rail.ApiOut.Controllers
 {
@@ -17,7 +18,6 @@ namespace Rail.ApiOut.Controllers
         
         //public string _correlation => _helper.GetValueFromClaims(_httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""), "unique_name");
         public string _APIKEY => _httpContextAccessor.HttpContext.Request.Headers["APIKEY"];
-        public string _Currency => _helper.GetValueFromClaims(_httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""), "Currency");
-
+        public string _Currency => _helper.GetValueFromClaims(_httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""), "Currency");        
     }
 }

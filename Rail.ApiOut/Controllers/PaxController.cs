@@ -33,7 +33,6 @@ namespace Rail.ApiOut.Controllers
         [Route("AddPax")]
         public async Task<IActionResult> AddPax(List<PaxDetailApi> paxDetails)
         {
-            string result = string.Empty;
             try
             {
                 foreach (var item in paxDetails)
@@ -41,95 +40,72 @@ namespace Rail.ApiOut.Controllers
                     item.fk_ItemId = await _processBooking.GetBookingItemIdByOffer(item.location);
                     item.Id = await _processBooking.GetPaxIdByOffer(item.fk_ItemId);
                 }
+
                 string jsonRequest = JsonConvert.SerializeObject(paxDetails);
-                result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddPax", jsonRequest, HttpMethod.Post);
+                string result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddPax", jsonRequest, HttpMethod.Post);
+
+                if (!result.Contains("SUCCESS"))
+                    return new JsonResult(new ApiResponse { Success = false, Message = "Something Went Wrong" });
+
+                var booking = await _processBooking.GetBookings(paxDetails[0].bookingId, _correlation);
+                var userRequest = new UserRequest
+                {
+                    OptionId = booking.Id.ToString(),
+                    AgentId = _AgentID,
+                    AgentCurrency = _Currency
+                };
+
+                string jsonRequest1 = JsonConvert.SerializeObject(userRequest);
+                result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/UpdateTravelersApiOut", jsonRequest1, HttpMethod.Post);
 
                 if (result.Contains("SUCCESS"))
-                {
-                    var booking = await _processBooking.GetBookings(paxDetails[0].bookingId,_correlation);
-                    UserRequest userRequest = new UserRequest();
-                    userRequest.OptionId = booking.Id.ToString();
-                    userRequest.AgentId = _AgentID;
-                    userRequest.AgentCurrency = _Currency;
-                    string jsonRequest1 = JsonConvert.SerializeObject(userRequest);
-                    result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/UpdateTravelersApiOut", jsonRequest1, HttpMethod.Post);
+                    return new JsonResult(new ApiResponse { Success = true, Message = "Pax details added successfully!" });
 
-                    if (result.Contains("SUCCESS"))
-                    {
-                        var apiResponse = new ApiResponse
-                        {
-                            Success = true,
-                            Message = "Pax details added successfully!",
-                            Errors = null
-                        };
-                        return new JsonResult(new { apiResponse });
-                    }
-                    else
-                    {                                                
-                        var apiResponse = new ApiResponse
-                        {
-                            Success = false,
-                            Message = "Something went wrong",
-                            Errors = null
-                        };
-
-                        return new JsonResult(new { apiResponse });
-                    }
-                }
-
-                var response1 = new ApiResponse
-                {
-                    Success = false,
-                    Message = "Something Went Wrong",
-                    Errors = null
-                };
-                return new JsonResult(new { response1 });
+                return CreateErrorResponse("Something went wrong");
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                var response = new ApiResponse
-                {
-                    Success = false,
-                    Message = "Something Went Wrong",
-                    Errors = null
-                };
-                return new JsonResult(new { response });
+                return CreateErrorResponse("Something went wrong");
             }
         }
 
+        //[HttpPost]
+        //[Route("UpdateTravelers")]
+        //public async Task<IActionResult> UpdateTravelers(UserRequestApiOut user)
+        //{
+        //    string result = string.Empty;
+        //    try
+        //    {
+        //        UserRequest userRequest = new UserRequest();
+        //        userRequest.OptionId = user.bookingId;
+        //        userRequest.AgentId = _AgentID;
+        //        userRequest.AgentCurrency = _Currency;
+        //        string jsonRequest = JsonConvert.SerializeObject(userRequest);
+        //        result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/UpdateTravelers", jsonRequest, HttpMethod.Post);
+        //        var response = new ApiResponse
+        //        {
+        //            Success = true,
+        //            Message = result,
+        //            Errors = null
+        //        };
+        //        return new JsonResult(new { response });
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return CreateErrorResponse("Something went wrong");
+        //    }
 
-        [HttpPost]
-        [Route("UpdateTravelers")]
-        public async Task<IActionResult> UpdateTravelers(UserRequestApiOut user)
+        //}
+
+        private IActionResult CreateErrorResponse(string message)
         {
-            string result = string.Empty;
-            try
+            var apiResponse = new ApiResponse
             {
-                UserRequest userRequest = new UserRequest();
-                userRequest.OptionId = user.bookingId;
-                userRequest.AgentId = _AgentID;
-                userRequest.AgentCurrency = _Currency;
-                string jsonRequest = JsonConvert.SerializeObject(userRequest);
-                result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/UpdateTravelers", jsonRequest, HttpMethod.Post);
-                var response = new ApiResponse
-                {
-                    Success = true,
-                    Message = result,
-                    Errors = null
-                };
-                return new JsonResult(new { response });
-            }
-            catch (Exception e)
-            {
-                var response = new ApiResponse
-                {
-                    Success = false,
-                    Message = "Something Went Wrong",
-                    Errors = null
-                };
-                return new JsonResult(new { response });
-            }
-
+                Success = false,
+                Message = message,
+                Errors = null
+            };
+            return new JsonResult(new { apiResponse });
         }
     }
 }

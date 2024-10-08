@@ -111,7 +111,7 @@ namespace Rail.ApiOut.CommonFunctions
 
                 var logEntry = new ApiOutLogs
                 {
-                    Request = request,
+                    Request = request.ToString(),
                     Url = url,
                     CreatedDate = DateTime.UtcNow,
                     correlationId = correlationId,
