@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Rail.ApiOut.CommonFunctions;
@@ -148,9 +149,9 @@ namespace Rail.ApiOut.Services
             return await _db.cartModel.Where(x => x.fk_bookingId == bookingId).Select(x => x.Id).ToListAsync();
         }
 
-        public async Task<BookingModel> GetBookings(string correlationId)
+        public async Task<BookingModel> GetBookings(string bookingId,string correlationId)
         {
-            return await _db.bookings.Where(x => x.CorrelationId == correlationId).FirstOrDefaultAsync();
+            return await _db.bookings.Where(x => x.BookingId == bookingId && x.CorrelationId == correlationId).FirstOrDefaultAsync();
         }
 
         public async Task<List<BookingItemsModel>> GetBookingitems(long bookingId)
@@ -222,7 +223,7 @@ namespace Rail.ApiOut.Services
 
             bookingItem.RiyaUserId = 0;
             bookingItem.ServiceFeesAppliedId = null;
-            bookingItem.Status = "Cart";
+            bookingItem.Status = "CART";
 
             bookingItem.SupplierId = offers.marketingCarrier;
             bookingItem.SupplierToInrFinal = 0;
@@ -263,7 +264,7 @@ namespace Rail.ApiOut.Services
             bookingItems.Origin = solution.origin.label;
             bookingItems.Destination = solution.destination.label;
             bookingItems.isDirect = solution.segments.Count();//
-            bookingItems.isRoundTrip = Convert.ToBoolean(res.legs[0].directOnly);//
+            bookingItems.isRoundTrip = res.legs.Count > 1 ? true : false ;//
             bookingItems.isInBound = false;//
             bookingItems.Departure = res.legs[0].departure;
             bookingItems.Arrival = solution.arrival;
@@ -271,7 +272,7 @@ namespace Rail.ApiOut.Services
             bookingItems.Comfort = offers.comfortCategory.label;
             bookingItems.Flexibility = offers.flexibility.label;
             bookingItems.numberOfTravelDays = null;
-            bookingItems.expirationDate = null; //offers.expirationDate.ToString();
+            bookingItems.expirationDate = Convert.ToDateTime(offers.expirationDate); //offers.expirationDate.ToString();
             bookingItems.activationPeriodStart = null;
             bookingItems.activationPeriodEnd = null;
             bookingItems.validityPeriodStart = null;
@@ -302,7 +303,7 @@ namespace Rail.ApiOut.Services
             bookingItems.SupplierId = offers.fareOffers[0].fares[0].productCode;
             bookingItems.AgentId = Convert.ToInt64(_AgentID);
             bookingItems.DeviceId = "NA";
-            bookingItems.Status = "Cart";
+            bookingItems.Status = "CART";
             bookingItems.Response = null;
             bookingItems.ParentId = 0;
             bookingItems.ModifiedDate = DateTime.Now;
@@ -372,7 +373,7 @@ namespace Rail.ApiOut.Services
 
 
 
-        public async Task<(List<BookingItemsModel> ticketItems, string result, List<KeyValuePair<string, string>>, List<decimal> totalAgentAmount)> HandleElseCondition(SearchHistoryModel searchResult, List<string> offerLocations, string item, string _correlation, string _Currency, string _AgentID)
+        public async Task<(List<BookingItemsModel> ticketItems, string result, List<KeyValuePair<string, string>>, List<decimal> totalAgentAmount,List<string> location)> HandleElseCondition(SearchHistoryModel searchResult, List<string> offerLocations, string item, List<string> location, string _correlation, string _Currency, string _AgentID)
         {
             var result = string.Empty;
             List<KeyValuePair<string, string>> travelerIds = new List<KeyValuePair<string, string>>();
@@ -390,6 +391,11 @@ namespace Rail.ApiOut.Services
                                         .Where(x => offerLocations.Contains(x.location))
                                         .Select(x => (Offer: x, Location: x.location))
                                         .ToList();
+
+                if(matchingOffers.Count != 2)
+                {
+                    throw new Exception("Matching offer is not available");
+                }
 
                 foreach (var offr in matchingOffers)
                 {
@@ -423,40 +429,44 @@ namespace Rail.ApiOut.Services
                         SectorList = bookingSectorsList
                     };
 
-                    result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCartP2PRTApiOut", JsonConvert.SerializeObject(carts), HttpMethod.Post);
+                    carts.Add(cartClass);
+                    ticketItems.Add(bookingItem);
+                    location.Add(offr.Location);
+                }
 
-                    if (result.Contains("SUCCESS"))
+                result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCartP2PRTApiOut", JsonConvert.SerializeObject(carts), HttpMethod.Post);
+
+                if (result.Contains("SUCCESS"))
+                {
+                    long pk_id = Convert.ToInt64(result.Split('|')[1]);
+                    ticketItems[0].Id = pk_id;
+                    ticketItems[1].ParentId = pk_id;
+
+                    foreach (var ticketItem in ticketItems)
                     {
-                        long pk_id = Convert.ToInt64(result.Split('|')[1]);
-                        ticketItems[0].Id = pk_id;
-                        ticketItems[1].ParentId = pk_id;
+                        string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={ticketItem.Currency} &To={_Currency}", "", HttpMethod.Get);
 
-                        foreach (var ticketItem in ticketItems)
+                        if (decimal.TryParse(currROEString, out decimal currROE))
                         {
-                            string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={ticketItem.Currency} &To={_Currency}", "", HttpMethod.Get);
-
-                            if (decimal.TryParse(currROEString, out decimal currROE))
-                            {
-                                decimal displayAmount = ticketItem.AgentAmount * currROE;
-                                displayAmount = Math.Round(displayAmount, 2);
-                                totalAgentAmount.Add(displayAmount);
-                            }
-                            else
-                            {
-                                throw new Exception("Failed to parse ROE value.");
-                            }
+                            decimal displayAmount = ticketItem.AgentAmount * currROE;
+                            displayAmount = Math.Round(displayAmount, 2);
+                            totalAgentAmount.Add(displayAmount);
                         }
-
-                        ticketItems.AddRange(ticketItems);
-                        foreach (var ids in res.travelers)
+                        else
                         {
-                            travelerIds.Add(new KeyValuePair<string, string>(ticketItems[0].Location, ids.id));
+                            throw new Exception("Failed to parse ROE value.");
                         }
                     }
-                    else
+
+                    //ticketItems.AddRange(ticketItems);
+                    foreach (var ids in res.travelers)
                     {
-                        throw new Exception("Something went wrong");
+                        travelerIds.Add(new KeyValuePair<string, string>(ticketItems[0].Location, ids.id));
                     }
+                }
+                else
+                {
+                    throw new Exception("Something went wrong");
                 }
             }
             else
@@ -522,7 +532,7 @@ namespace Rail.ApiOut.Services
                 }
             }
 
-            return (ticketItems, result, travelerIds, totalAgentAmount);
+            return (ticketItems, result, travelerIds, totalAgentAmount,location);
         }
 
 
@@ -576,6 +586,11 @@ namespace Rail.ApiOut.Services
 
                 throw;
             }
+        }
+    
+        public async Task<bool> CheckExistCorrelation(string correlationId)
+        {
+           return await _db.bookings.AnyAsync(x => x.CorrelationId == correlationId);
         }
     }
 }

@@ -14,6 +14,7 @@ namespace Rail.ApiOut.Controllers
         }
         public string _AgentID => _helper.GetValueFromClaims(_httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""), "nameid");
         public string _correlation => _httpContextAccessor.HttpContext.Request.Headers["correlationId"];
+        
         //public string _correlation => _helper.GetValueFromClaims(_httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""), "unique_name");
         public string _APIKEY => _httpContextAccessor.HttpContext.Request.Headers["APIKEY"];
         public string _Currency => _helper.GetValueFromClaims(_httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""), "Currency");

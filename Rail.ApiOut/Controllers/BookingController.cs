@@ -189,375 +189,234 @@ namespace Rail.ApiOut.Controllers
         }
 
         #region CreateBOOking Working 
-        //[HttpPost]
-        //[Route("CreateBooking")]
-        //public async Task<IActionResult> CreateBooking(CreateBookingRequestApiOut bookingRequest)
-        //{
-        //    string result = String.Empty;
-        //    try
-        //    {
-        //        List<BookingItemsModel> items = new List<BookingItemsModel>();
-        //        var searchmodel = await _searchService.GetSearchHistory(_correlation);
-
-        //        List<decimal> totalAgentAmount = new List<decimal>();
-
-        //        Dictionary<string, string> travelerIds = new Dictionary<string, string>();
-        //        List<string> locations = new List<string>();
-        //        foreach (var item in bookingRequest.offerLocations)
-        //        {
-        //            if (locations.Contains(item))
-        //            {
-        //                continue;
-        //            }
-        //            var searchresult = searchmodel.Where(x => x.Response.Contains(item)).FirstOrDefault();
-        //            if (searchresult != null)
-        //            {
-        //                if (searchresult.Type == "PASS")
-        //                {
-        //                    PassesModelResponse res = JsonConvert.DeserializeObject<PassesModelResponse>(searchresult.Response);
-
-        //                    var offers = res.offers.Where(x => x.location == item).FirstOrDefault();
-
-        //                    var conditionJson = JsonConvert.SerializeObject(offers.conditions);
-        //                    var pricingJson = JsonConvert.SerializeObject(offers.prices);
-        //                    var travelersJSon = JsonConvert.SerializeObject(res.travelers);
-
-        //                    BookingItemsModel bookingItem = await _processBooking.CreateBookingItemPass(searchresult, offers, conditionJson, pricingJson, travelersJSon, item, _correlation, _Currency, _AgentID);
-
-        //                    result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCart", JsonConvert.SerializeObject(bookingItem), HttpMethod.Post);
-        //                    if (result.Contains("SUCCESS"))
-        //                    {
-        //                        string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={bookingItem.Currency} &To={bookingItem.AgentCurrency}", "", HttpMethod.Get);
-
-        //                        if (decimal.TryParse(currROEString, out decimal currROE))
-        //                        {
-        //                            decimal displayAmount = bookingItem.AgentAmount * currROE;
-        //                            displayAmount = Math.Round(displayAmount, 2);
-        //                            totalAgentAmount.Add(displayAmount);
-        //                        }
-        //                        else
-        //                        {
-        //                            // Handle the case where the API didn't return a valid decimal value
-        //                            throw new Exception("Failed to parse ROE value.");
-        //                        }
-        //                        items.Add(bookingItem);
-        //                        foreach (var ids in res.travelers)
-        //                        {
-        //                            travelerIds.Add(item, ids.id);
-        //                        }
-        //                    }
-        //                    else
-        //                    {
-        //                        var apiResponse = new ApiResponse
-        //                        {
-        //                            Success = false,
-        //                            Message = "Something Went Wrong",
-        //                            Errors = null
-        //                        };
-        //                        return new JsonResult(new { apiResponse });
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    var searchResponse = searchresult.Response;
-        //                    TicketsModelResponse res = JsonConvert.DeserializeObject<TicketsModelResponse>(searchResponse);
-
-        //                    if (res.legs.Count > 1)
-        //                    {
-        //                        List<BookingSectorsModel> bookingSectorsList = new List<BookingSectorsModel>();
-        //                        List<CartClass> carts = new List<CartClass>();
-        //                        List<BookingItemsModel> bookingitemLst = new List<BookingItemsModel>();
-
-
-        //                        var matchingOffers = res.offers
-        //                                            .Where(x => bookingRequest.offerLocations.Contains(x.location))
-        //                                            .Select(x => (Offer: x, Location: x.location))
-        //                                            .ToList();
-
-        //                        foreach (var offr in matchingOffers)
-        //                        {
-
-        //                            var solution = res.legs?
-        //                                                .SelectMany(leg => leg.solutions)
-        //                                                .FirstOrDefault(solution => solution?.id == offr.Offer.legSolution);
-
-        //                            var segment = solution.segments;
-
-        //                            foreach (var seg in segment)
-        //                            {
-        //                                BookingSectorsModel sector = new BookingSectorsModel
-        //                                {
-        //                                    Origin = seg.origin.label,
-        //                                    Destination = seg.destination.label,
-        //                                    Departure = seg.departure,
-        //                                    Arrival = seg.arrival,
-        //                                    Duration = seg.duration,
-        //                                    SequenceNumber = seg.sequenceNumber
-        //                                };
-        //                                bookingSectorsList.Add(sector);
-        //                            }
-
-        //                            var travelersJSon = JsonConvert.SerializeObject(res.travelers);
-
-        //                            BookingItemsModel bookingItems = await _processBooking.CreateBookingItemP2P(res,offr.Offer , solution, travelersJSon, item, _correlation, _Currency, _AgentID);                                    
-
-        //                            CartClass cartClass = new CartClass();
-        //                            cartClass.cartModel = bookingItems;
-        //                            cartClass.SectorList = bookingSectorsList;
-        //                            carts.Add(cartClass);
-        //                            locations.Add(offr.Location);
-        //                        }
-
-        //                        result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCartP2PRTApiOut", JsonConvert.SerializeObject(carts), HttpMethod.Post);
-
-        //                        if (result.Contains("SUCCESS"))
-        //                        {
-        //                            long pk_id = Convert.ToInt64(result.Split('|')[1]);
-        //                            bookingitemLst[0].Id = pk_id;
-        //                            bookingitemLst[1].ParentId = pk_id;
-
-        //                            foreach (var itemlst in bookingitemLst)
-        //                            {
-        //                                string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={itemlst.Currency} &To={_Currency}", "", HttpMethod.Get);
-
-        //                                if (decimal.TryParse(currROEString, out decimal currROE))
-        //                                {
-        //                                    decimal displayAmount = itemlst.AgentAmount * currROE;
-        //                                    displayAmount = Math.Round(displayAmount, 2);
-        //                                    totalAgentAmount.Add(displayAmount);
-        //                                }
-        //                                else
-        //                                {
-        //                                    // Handle the case where the API didn't return a valid decimal value
-        //                                    throw new Exception("Failed to parse ROE value.");
-        //                                }
-        //                            }
-
-
-        //                            items.AddRange(bookingitemLst);
-        //                            foreach (var ids in res.travelers)
-        //                            {
-        //                                travelerIds.Add(bookingitemLst[0].Location, ids.id);
-        //                            }
-        //                        }
-        //                        else
-        //                        {
-        //                            // Handle the case where the API didn't return a valid decimal value
-        //                            throw new Exception("Something went wrong");
-        //                        }
-
-        //                    }
-        //                    else
-        //                    {
-        //                        var offers = res.offers.Where(x => x.location == item).FirstOrDefault();
-        //                        var solution = res.legs?
-        //                                               .SelectMany(leg => leg.solutions)
-        //                                               .FirstOrDefault(solution => solution?.id == offers.legSolution);
-
-        //                        //var solution = res.legs[0].solutions.Where(x => x.id == offers.legSolution).FirstOrDefault();
-        //                        var segment = solution?.segments;
-        //                        List<BookingSectorsModel> bookingSectorsList = new List<BookingSectorsModel>();
-
-        //                        foreach (var seg in segment)
-        //                        {
-        //                            BookingSectorsModel sector = new BookingSectorsModel
-        //                            {
-        //                                Origin = seg.origin.label,
-        //                                Destination = seg.destination.label,
-        //                                Departure = seg.departure,
-        //                                Arrival = seg.arrival,
-        //                                Duration = seg.duration,
-        //                                SequenceNumber = seg.sequenceNumber
-        //                            };
-        //                            bookingSectorsList.Add(sector);
-        //                        }
-
-        //                        var travelersJSon = JsonConvert.SerializeObject(res.travelers);
-
-        //                        BookingItemsModel bookingItems = await _processBooking.CreateBookingItemP2P(res, offers, solution, travelersJSon, item, _correlation, _Currency, _AgentID);                            
-
-        //                        foreach (var ids in res.travelers)
-        //                        {
-        //                            travelerIds.Add(offers.location, ids.id);
-        //                        }
-
-        //                        CartClass cartClass = new CartClass();
-        //                        cartClass.cartModel = bookingItems;
-        //                        cartClass.SectorList = bookingSectorsList;
-        //                        result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCartP2P", JsonConvert.SerializeObject(cartClass), HttpMethod.Post);
-
-        //                        if (result.Contains("SUCCESS"))
-        //                        {
-        //                            string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={bookingItems.Currency} &To={bookingItems.AgentCurrency}", "", HttpMethod.Get);
-
-        //                            if (decimal.TryParse(currROEString, out decimal currROE))
-        //                            {
-        //                                decimal displayAmount = bookingItems.AgentAmount * currROE;
-        //                                displayAmount = Math.Round(displayAmount, 2);
-        //                                totalAgentAmount.Add(displayAmount);
-        //                            }
-        //                            else
-        //                            {
-        //                                // Handle the case where the API didn't return a valid decimal value
-        //                                throw new Exception("Failed to parse ROE value.");
-        //                            }
-        //                            items.Add(bookingItems);
-        //                        }
-        //                        else
-        //                        {
-        //                            var apiResponse = new ApiResponse
-        //                            {
-        //                                Success = false,
-        //                                Message = "Something Went Wrong",
-        //                                Errors = null
-        //                            };
-        //                            return new JsonResult(new { apiResponse });
-        //                        }
-        //                    }
-        //                }
-
-        //            }
-        //        }
-
-        //        #region CreateBooking Reqeust
-
-        //        CreateBookingRequest request = new CreateBookingRequest();
-        //        request.items = new List<BO.Item>();
-        //        request.correlationid = _correlation;
-        //        foreach (var item in items.Where(x => x.ParentId == 0))
-        //        {
-        //            List<string> liststrings = new List<string>();
-        //            liststrings.Add(item.Location);
-        //            if (item.isRoundTrip)
-        //            {
-        //                liststrings.Add(items.First(x => x.ParentId == item.Id).Location);
-        //            }
-        //            request.items.Add(new BO.Item()
-        //            {
-        //                offerLocations = liststrings
-        //            });
-        //        }
-
-        //        BookingApiRequest apiRequest = new BookingApiRequest();
-        //        UserRequest user = new UserRequest();
-        //        user.AgentId = _AgentID;
-        //        user.AgentCurrency = _Currency;
-        //        user.RiyaUserId = "0";
-        //        apiRequest.User = user;
-        //        apiRequest.CreateBooking = request;
-
-        //        result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/CreateBokingApiOut", JsonConvert.SerializeObject(apiRequest), HttpMethod.Post);
-
-        //        #endregion
-
-        //        BookingResponseApiOut response = JsonConvert.DeserializeObject<BookingResponseApiOut>(result);
-        //        CreateBookingResponse bookingResponse = JsonConvert.DeserializeObject<CreateBookingResponse>(response.EraResponse);
-
-        //        var booking = await _processBooking.GetBookings(_correlation);
-
-        //        decimal currROEEUR = 0.00m;
-        //        decimal totalAmountToPay;
-
-        //        string roeString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={booking.BFCurrency}&To={booking.AgentCurrency}", "", HttpMethod.Get);
-        //        currROEEUR = decimal.Parse(roeString);
-        //        totalAmountToPay = await _processBooking.CalculateTotalAmountToPay(totalAgentAmount, booking.BookingFee, booking.MarkUpOnBookingFee, currROEEUR, 0.00m);
-
-        //        string bookingID = string.Empty;
-        //        if (response.BookingResponse.Contains("SUCCESS"))
-        //        {
-        //            bookingID = response.BookingResponse.Substring(8);
-        //        }
-
-        //        var data = new
-        //        {
-        //            totalAmountToPay,
-        //            bookingid = bookingResponse.id,
-        //            travelerIds
-        //            //BookBefore =  booking.expirationDate.Value.ToString("dddd, dd MMMM yyyy")
-        //        };
-        //        var apiresponse = new ApiResponse
-        //        {
-        //            Success = true,
-        //            Message = JsonConvert.SerializeObject(data),
-        //            Errors = null
-        //        };
-
-        //        return new JsonResult(new { apiresponse });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        var response = new ApiResponse
-        //        {
-        //            Success = false,
-        //            Message = "Something Went Wrong",
-        //            Errors = null
-        //        };
-        //        return new JsonResult(new { response });
-        //    }
-        //}
-
-        #endregion
-
-
         [HttpPost]
-        [Route("CreateBooking")]
-        public async Task<IActionResult> CreateBooking(CreateBookingRequestApiOut bookingRequest)
+        [Route("CreateBooking1")]
+        public async Task<IActionResult> CreateBooking1(CreateBookingRequestApiOut bookingRequest)
         {
-            string result = string.Empty;
+            string result = String.Empty;
             try
             {
                 List<BookingItemsModel> items = new List<BookingItemsModel>();
                 var searchmodel = await _searchService.GetSearchHistory(_correlation);
 
                 List<decimal> totalAgentAmount = new List<decimal>();
-                List<KeyValuePair<string, string>> travelerIds = new List<KeyValuePair<string, string>>();
-                List<string> locations = new List<string>();
 
+                Dictionary<string, string> travelerIds = new Dictionary<string, string>();
+                List<string> locations = new List<string>();
                 foreach (var item in bookingRequest.offerLocations)
                 {
-                    if (locations.Contains(item)) continue;
-
+                    if (locations.Contains(item))
+                    {
+                        continue;
+                    }
                     var searchresult = searchmodel.Where(x => x.Response.Contains(item)).FirstOrDefault();
                     if (searchresult != null)
                     {
                         if (searchresult.Type == "PASS")
                         {
-                            var (passItems, passResult, passTravelerIds, passTotalAgentAmount) = await _processBooking.HandlePassCondition(
-                                searchresult, item, _correlation, _Currency, _AgentID, baseUrl);
+                            PassesModelResponse res = JsonConvert.DeserializeObject<PassesModelResponse>(searchresult.Response);
 
-                            if (!string.IsNullOrEmpty(passResult) && passResult.Contains("SUCCESS"))
+                            var offers = res.offers.Where(x => x.location == item).FirstOrDefault();
+
+                            var conditionJson = JsonConvert.SerializeObject(offers.conditions);
+                            var pricingJson = JsonConvert.SerializeObject(offers.prices);
+                            var travelersJSon = JsonConvert.SerializeObject(res.travelers);
+
+                            BookingItemsModel bookingItem = await _processBooking.CreateBookingItemPass(searchresult, offers, conditionJson, pricingJson, travelersJSon, item, _correlation, _Currency, _AgentID);
+
+                            result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCart", JsonConvert.SerializeObject(bookingItem), HttpMethod.Post);
+                            if (result.Contains("SUCCESS"))
                             {
-                                items.AddRange(passItems);
-                                foreach (var keyValue in passTravelerIds)
+                                string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={bookingItem.Currency} &To={bookingItem.AgentCurrency}", "", HttpMethod.Get);
+
+                                if (decimal.TryParse(currROEString, out decimal currROE))
                                 {
-                                    travelerIds.Add(keyValue);
+                                    decimal displayAmount = bookingItem.AgentAmount * currROE;
+                                    displayAmount = Math.Round(displayAmount, 2);
+                                    totalAgentAmount.Add(displayAmount);
                                 }
-                                totalAgentAmount.AddRange(passTotalAgentAmount);
+                                else
+                                {
+                                    // Handle the case where the API didn't return a valid decimal value
+                                    throw new Exception("Failed to parse ROE value.");
+                                }
+                                items.Add(bookingItem);
+                                foreach (var ids in res.travelers)
+                                {
+                                    travelerIds.Add(item, ids.id);
+                                }
                             }
                             else
                             {
-                                return new JsonResult(new { apiResponse = new ApiResponse { Success = false, Message = "Something Went Wrong", Errors = null } });
+                                var apiResponse = new ApiResponse
+                                {
+                                    Success = false,
+                                    Message = "Something Went Wrong",
+                                    Errors = null
+                                };
+                                return new JsonResult(new { apiResponse });
                             }
                         }
                         else
                         {
-                            var (ticketItems, ticketResult, ticketTravelerIds, ticketTotalAgentAmount) = await _processBooking.HandleElseCondition(
-                                searchresult, bookingRequest.offerLocations, item, _correlation, _Currency, _AgentID);
+                            var searchResponse = searchresult.Response;
+                            TicketsModelResponse res = JsonConvert.DeserializeObject<TicketsModelResponse>(searchResponse);
 
-                            if (!string.IsNullOrEmpty(ticketResult) && ticketResult.Contains("SUCCESS"))
+                            if (res.legs.Count > 1)
                             {
-                                items.AddRange(ticketItems);
-                                foreach (var keyValue in ticketTravelerIds)
+                                List<BookingSectorsModel> bookingSectorsList = new List<BookingSectorsModel>();
+                                List<CartClass> carts = new List<CartClass>();
+                                List<BookingItemsModel> bookingitemLst = new List<BookingItemsModel>();
+
+
+                                var matchingOffers = res.offers
+                                                    .Where(x => bookingRequest.offerLocations.Contains(x.location))
+                                                    .Select(x => (Offer: x, Location: x.location))
+                                                    .ToList();
+
+                                foreach (var offr in matchingOffers)
                                 {
-                                    travelerIds.Add(keyValue);
+
+                                    var solution = res.legs?
+                                                        .SelectMany(leg => leg.solutions)
+                                                        .FirstOrDefault(solution => solution?.id == offr.Offer.legSolution);
+
+                                    var segment = solution.segments;
+
+                                    foreach (var seg in segment)
+                                    {
+                                        BookingSectorsModel sector = new BookingSectorsModel
+                                        {
+                                            Origin = seg.origin.label,
+                                            Destination = seg.destination.label,
+                                            Departure = seg.departure,
+                                            Arrival = seg.arrival,
+                                            Duration = seg.duration,
+                                            SequenceNumber = seg.sequenceNumber
+                                        };
+                                        bookingSectorsList.Add(sector);
+                                    }
+
+                                    var travelersJSon = JsonConvert.SerializeObject(res.travelers);
+
+                                    BookingItemsModel bookingItems = await _processBooking.CreateBookingItemP2P(res, offr.Offer, solution, travelersJSon, item, _correlation, _Currency, _AgentID);
+
+                                    CartClass cartClass = new CartClass();
+                                    cartClass.cartModel = bookingItems;
+                                    cartClass.SectorList = bookingSectorsList;
+                                    carts.Add(cartClass);
+                                    locations.Add(offr.Location);
+                                    bookingitemLst.Add(bookingItems);
                                 }
-                                totalAgentAmount.AddRange(ticketTotalAgentAmount);
+
+                                result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCartP2PRTApiOut", JsonConvert.SerializeObject(carts), HttpMethod.Post);
+
+                                if (result.Contains("SUCCESS"))
+                                {
+                                    long pk_id = Convert.ToInt64(result.Split('|')[1]);
+                                    bookingitemLst[0].Id = pk_id;
+                                    bookingitemLst[1].ParentId = pk_id;
+
+                                    foreach (var itemlst in bookingitemLst)
+                                    {
+                                        string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={itemlst.Currency} &To={_Currency}", "", HttpMethod.Get);
+
+                                        if (decimal.TryParse(currROEString, out decimal currROE))
+                                        {
+                                            decimal displayAmount = itemlst.AgentAmount * currROE;
+                                            displayAmount = Math.Round(displayAmount, 2);
+                                            totalAgentAmount.Add(displayAmount);
+                                        }
+                                        else
+                                        {
+                                            // Handle the case where the API didn't return a valid decimal value
+                                            throw new Exception("Failed to parse ROE value.");
+                                        }
+                                    }
+
+
+                                    items.AddRange(bookingitemLst);
+                                    foreach (var ids in res.travelers)
+                                    {
+                                        travelerIds.Add(bookingitemLst[0].Location, ids.id);
+                                    }
+                                }
+                                else
+                                {
+                                    // Handle the case where the API didn't return a valid decimal value
+                                    throw new Exception("Something went wrong");
+                                }
+
                             }
                             else
                             {
-                                return new JsonResult(new { apiResponse = new ApiResponse { Success = false, Message = "Something Went Wrong", Errors = null } });
+                                var offers = res.offers.Where(x => x.location == item).FirstOrDefault();
+                                var solution = res.legs?
+                                                       .SelectMany(leg => leg.solutions)
+                                                       .FirstOrDefault(solution => solution?.id == offers.legSolution);
+
+                                //var solution = res.legs[0].solutions.Where(x => x.id == offers.legSolution).FirstOrDefault();
+                                var segment = solution?.segments;
+                                List<BookingSectorsModel> bookingSectorsList = new List<BookingSectorsModel>();
+
+                                foreach (var seg in segment)
+                                {
+                                    BookingSectorsModel sector = new BookingSectorsModel
+                                    {
+                                        Origin = seg.origin.label,
+                                        Destination = seg.destination.label,
+                                        Departure = seg.departure,
+                                        Arrival = seg.arrival,
+                                        Duration = seg.duration,
+                                        SequenceNumber = seg.sequenceNumber
+                                    };
+                                    bookingSectorsList.Add(sector);
+                                }
+
+                                var travelersJSon = JsonConvert.SerializeObject(res.travelers);
+
+                                BookingItemsModel bookingItems = await _processBooking.CreateBookingItemP2P(res, offers, solution, travelersJSon, item, _correlation, _Currency, _AgentID);
+
+                                foreach (var ids in res.travelers)
+                                {
+                                    travelerIds.Add(offers.location, ids.id);
+                                }
+
+                                CartClass cartClass = new CartClass();
+                                cartClass.cartModel = bookingItems;
+                                cartClass.SectorList = bookingSectorsList;
+                                result = await _helper.ExecuteAPI(baseUrl + "/api/Cart/AddToCartP2P", JsonConvert.SerializeObject(cartClass), HttpMethod.Post);
+
+                                if (result.Contains("SUCCESS"))
+                                {
+                                    string currROEString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={bookingItems.Currency} &To={bookingItems.AgentCurrency}", "", HttpMethod.Get);
+
+                                    if (decimal.TryParse(currROEString, out decimal currROE))
+                                    {
+                                        decimal displayAmount = bookingItems.AgentAmount * currROE;
+                                        displayAmount = Math.Round(displayAmount, 2);
+                                        totalAgentAmount.Add(displayAmount);
+                                    }
+                                    else
+                                    {
+                                        // Handle the case where the API didn't return a valid decimal value
+                                        throw new Exception("Failed to parse ROE value.");
+                                    }
+                                    items.Add(bookingItems);
+                                }
+                                else
+                                {
+                                    var apiResponse = new ApiResponse
+                                    {
+                                        Success = false,
+                                        Message = "Something Went Wrong",
+                                        Errors = null
+                                    };
+                                    return new JsonResult(new { apiResponse });
+                                }
                             }
                         }
+
                     }
                 }
 
@@ -595,7 +454,174 @@ namespace Rail.ApiOut.Controllers
                 BookingResponseApiOut response = JsonConvert.DeserializeObject<BookingResponseApiOut>(result);
                 CreateBookingResponse bookingResponse = JsonConvert.DeserializeObject<CreateBookingResponse>(response.EraResponse);
 
-                var booking = await _processBooking.GetBookings(_correlation);
+                var booking = await _processBooking.GetBookings(bookingResponse.id,_correlation);
+
+                decimal currROEEUR = 0.00m;
+                decimal totalAmountToPay;
+
+                string roeString = await _helper.ExecuteAPI($"{baseUrl}/api/Cart/GetROE?From={booking.BFCurrency}&To={booking.AgentCurrency}", "", HttpMethod.Get);
+                currROEEUR = decimal.Parse(roeString);
+                totalAmountToPay = await _processBooking.CalculateTotalAmountToPay(totalAgentAmount, booking.BookingFee, booking.MarkUpOnBookingFee, currROEEUR, 0.00m);
+
+                string bookingID = string.Empty;
+                if (response.BookingResponse.Contains("SUCCESS"))
+                {
+                    bookingID = response.BookingResponse.Substring(8);
+                }
+
+                var data = new
+                {
+                    totalAmountToPay,
+                    bookingid = bookingResponse.id,
+                    travelerIds
+                    //BookBefore =  booking.expirationDate.Value.ToString("dddd, dd MMMM yyyy")
+                };
+                var apiresponse = new ApiResponse
+                {
+                    Success = true,
+                    Message = JsonConvert.SerializeObject(data),
+                    Errors = null
+                };
+
+                return new JsonResult(new { apiresponse });
+            }
+            catch (Exception ex)
+            {
+                var response = new ApiResponse
+                {
+                    Success = false,
+                    Message = "Something Went Wrong",
+                    Errors = null
+                };
+                return new JsonResult(new { response });
+            }
+        }
+
+        #endregion
+
+
+        [HttpPost]
+        [Route("CreateBooking")]
+        public async Task<IActionResult> CreateBooking(CreateBookingRequestApiOut bookingRequest)
+        {
+            string result = string.Empty;
+            try
+            {
+                var checkExistCorrelation = await _processBooking.CheckExistCorrelation(_correlation);
+                if(checkExistCorrelation)
+                {
+                    var error = new ApiResponse
+                    {
+                        Success = false,
+                        Message = "Correlation Already Exist",
+                        Errors = null
+                    };
+                    return new JsonResult(new { error });
+                }
+
+                List<BookingItemsModel> items = new List<BookingItemsModel>();
+                var searchmodel = await _searchService.GetSearchHistory(_correlation);
+
+                List<decimal> totalAgentAmount = new List<decimal>();
+                List<KeyValuePair<string, string>> travelerIds = new List<KeyValuePair<string, string>>();
+                List<string> locations = new List<string>();
+
+                foreach (var item in bookingRequest.offerLocations)
+                {
+                    if (locations.Contains(item)) continue;
+
+                    var searchresult = searchmodel.Where(x => x.Response.Contains(item)).FirstOrDefault();
+                    if (searchresult != null)
+                    {
+                        if (searchresult.Type == "PASS")
+                        {
+                            var (passItems, passResult, passTravelerIds, passTotalAgentAmount) = await _processBooking.HandlePassCondition(
+                                searchresult, item, _correlation, _Currency, _AgentID, baseUrl);
+
+                            if (!string.IsNullOrEmpty(passResult) && passResult.Contains("SUCCESS"))
+                            {
+                                items.AddRange(passItems);
+                                foreach (var keyValue in passTravelerIds)
+                                {
+                                    travelerIds.Add(keyValue);
+                                }
+                                totalAgentAmount.AddRange(passTotalAgentAmount);
+                            }
+                            else
+                            {
+                                return new JsonResult(new { apiResponse = new ApiResponse { Success = false, Message = "Something Went Wrong", Errors = null } });
+                            }
+                        }
+                        else
+                        {
+                            var (ticketItems, ticketResult, ticketTravelerIds, ticketTotalAgentAmount, location) = await _processBooking.HandleElseCondition(
+                                searchresult, bookingRequest.offerLocations, item, locations, _correlation, _Currency, _AgentID);
+
+                            if (!string.IsNullOrEmpty(ticketResult) && ticketResult.Contains("SUCCESS"))
+                            {
+                                items.AddRange(ticketItems);
+                                foreach (var keyValue in ticketTravelerIds)
+                                {
+                                    travelerIds.Add(keyValue);
+                                }
+                                totalAgentAmount.AddRange(ticketTotalAgentAmount);
+                            }
+                            else
+                            {
+                                return new JsonResult(new { apiResponse = new ApiResponse { Success = false, Message = "Something Went Wrong", Errors = null } });
+                            }
+                        }
+                    }
+                }
+
+                #region CreateBooking Reqeust
+
+                CreateBookingRequest request = new CreateBookingRequest();
+                request.items = new List<BO.Item>();
+                request.correlationid = _correlation;
+                foreach (var bkitem in items.Where(x => x.ParentId == 0))
+                {
+                    List<string> liststrings = new List<string>();
+                    liststrings.Add(bkitem.Location);
+                    if (bkitem.isRoundTrip)
+                    {
+                        liststrings.Add(items.First(x => x.ParentId == bkitem.Id).Location);
+                    }
+                    request.items.Add(new BO.Item()
+                    {
+                        offerLocations = liststrings
+                    });
+                }
+
+                BookingApiRequest apiRequest = new BookingApiRequest();
+                UserRequest user = new UserRequest();
+                user.AgentId = _AgentID;
+                user.AgentCurrency = _Currency;
+                user.RiyaUserId = "0";
+                apiRequest.User = user;
+                apiRequest.CreateBooking = request;
+
+                result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/CreateBokingApiOut", JsonConvert.SerializeObject(apiRequest), HttpMethod.Post);
+                if (result.Contains("FAILURE"))
+                {
+
+                    BookingResponseApiOut resp = JsonConvert.DeserializeObject<BookingResponseApiOut>(result);
+                    var errResponse = JsonConvert.DeserializeObject<ErrorResponse>(resp.EraResponse);
+                    var apiresp = new ApiResponse
+                    {
+                        Success = true,
+                        Message = errResponse,
+                        Errors = null
+                    };
+
+                    return new JsonResult(new { apiresp });
+                }
+                #endregion
+
+                BookingResponseApiOut response = JsonConvert.DeserializeObject<BookingResponseApiOut>(result);
+                CreateBookingResponse bookingResponse = JsonConvert.DeserializeObject<CreateBookingResponse>(response.EraResponse);
+
+                var booking = await _processBooking.GetBookings(bookingResponse.id, _correlation);
 
                 decimal currROEEUR = 0.00m;
                 decimal totalAmountToPay;
@@ -614,10 +640,10 @@ namespace Rail.ApiOut.Controllers
                 {
                     TravelerInformationRequired = new
                     {
-                        defaultTravelerInformationRequired = b.travelerInformationRequired.defaultTravelerInformationRequired,
-                        leadTravelerInformationRequired = b.travelerInformationRequired.leadTravelerInformationRequired,
+                        b.travelerInformationRequired.defaultTravelerInformationRequired,
+                        b.travelerInformationRequired.leadTravelerInformationRequired,
                         travelerIds = b.travelers.Select(t => t.id).ToList(),
-                        location = b.offerLocations
+                        location = b.offerLocations.FirstOrDefault()
                     }
                 }).ToList();
 
@@ -645,7 +671,7 @@ namespace Rail.ApiOut.Controllers
                 var response = new ApiResponse
                 {
                     Success = false,
-                    Message = "Something Went Wrong",
+                    Message = ex.Message,
                     Errors = null
                 };
                 return new JsonResult(new { response });

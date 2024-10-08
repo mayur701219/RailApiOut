@@ -15,7 +15,7 @@ namespace Rail.BO
     public class RefundQuoteRequest
     {
         public string? type { get; set; }
-        public List<ItemRefund>? items { get; set; }
+        public List<ItemRefund>? items { get; set; } = new List<ItemRefund>();
     }
     public class Leg
     {
@@ -28,7 +28,7 @@ namespace Rail.BO
     public class ItemRefund
     {
         public string? id { get; set; }
-        public List<Leg>? legs { get; set; }
-        public List<CancellableItem>? cancellableItems { get; set; }
+        public List<Leg>? legs { get; set; } = new List<Leg> { };
+        public List<CancellableItem>? cancellableItems { get; set; } = new List<CancellableItem>();
     }
 }

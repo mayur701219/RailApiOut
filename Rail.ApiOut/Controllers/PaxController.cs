@@ -12,7 +12,7 @@ namespace Rail.ApiOut.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    
     public class PaxController : BaseRailController
     {
         private readonly IHelper _helper;
@@ -46,20 +46,35 @@ namespace Rail.ApiOut.Controllers
 
                 if (result.Contains("SUCCESS"))
                 {
-                    var booking = await _processBooking.GetBookings(_correlation);
+                    var booking = await _processBooking.GetBookings(paxDetails[0].bookingId,_correlation);
                     UserRequest userRequest = new UserRequest();
                     userRequest.OptionId = booking.Id.ToString();
                     userRequest.AgentId = _AgentID;
                     userRequest.AgentCurrency = _Currency;
                     string jsonRequest1 = JsonConvert.SerializeObject(userRequest);
                     result = await _helper.ExecuteAPI(baseUrl + "/api/Booking/UpdateTravelersApiOut", jsonRequest1, HttpMethod.Post);
-                    var response = new ApiResponse
+
+                    if (result.Contains("SUCCESS"))
                     {
-                        Success = true,
-                        Message = "Pax details added successfully!",
-                        Errors = null
-                    };
-                    return new JsonResult(new { response });
+                        var apiResponse = new ApiResponse
+                        {
+                            Success = true,
+                            Message = "Pax details added successfully!",
+                            Errors = null
+                        };
+                        return new JsonResult(new { apiResponse });
+                    }
+                    else
+                    {                                                
+                        var apiResponse = new ApiResponse
+                        {
+                            Success = false,
+                            Message = "Something went wrong",
+                            Errors = null
+                        };
+
+                        return new JsonResult(new { apiResponse });
+                    }
                 }
 
                 var response1 = new ApiResponse

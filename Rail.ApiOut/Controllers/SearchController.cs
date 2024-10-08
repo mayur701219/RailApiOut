@@ -39,6 +39,10 @@ namespace Rail.ApiOut.Controllers
            
             string status = "success";
             JObject? _resData = null;
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             try
             {
                 if (search.Type == "PASS")
@@ -67,7 +71,8 @@ namespace Rail.ApiOut.Controllers
                 {
                     #region MODIFY RESPONSE
 
-                    modifiedresponse = RemoveUnwantedProperties(response);
+                    bool removeFamilycard = search.isFamilyCard == true && search.From.label == "Switzerland" && search.travelers.Any(x => x.age < 27);
+                    modifiedresponse = RemoveUnwantedProperties(response, removeFamilycard);
                     _resData = JObject.Parse(modifiedresponse);
                     string currency = GetFirstBillingCurrency(_resData);
 
@@ -82,10 +87,13 @@ namespace Rail.ApiOut.Controllers
 
                     #region Swiss Family Pass
 
-                    if (search.isFamilyCard == true && search.Type == "PASS" && search.From.label == "Switzerland" && search.travelers.Any(x => x.age < 27))
-                    {
-                        GetFamilyCardOffers(_resData);
-                    }
+                    //if (search.isFamilyCard == true && search.Type == "PASS" && search.From.label == "Switzerland" && search.travelers.Any(x => x.age < 27))
+                    //{
+                    //    GetFamilyCardOffers(_resData);
+                    //}                    //if (search.isFamilyCard == true && search.Type == "PASS" && search.From.label == "Switzerland" && search.travelers.Any(x => x.age < 27))
+                    //{
+                    //    GetFamilyCardOffers(_resData);
+                    //}
                     #endregion
 
                     await _searchService.SaveHistory(_resData["id"].ToString(), _correlation, search.Type, response, Convert.ToInt64(_AgentID));
@@ -175,8 +183,8 @@ namespace Rail.ApiOut.Controllers
 
             newValue = Math.Round(newValue, 2);
             // Add new properties to the amount object
-            amount["supplierValue"] = newValue;
-            amount["supplierCurrency"] = newCurrency;
+            amount["agentValue"] = newValue;
+            amount["agentCurrency"] = newCurrency;
         }
 
 
@@ -200,32 +208,38 @@ namespace Rail.ApiOut.Controllers
                     continue;
 
                 var agentSellingPriceValue = (decimal?)agentSellingPrice["value"] ?? 0;
-                var agentSellingPriceNewValue = (decimal?)agentSellingPrice["supplierValue"] ?? 0;
+                var agentSellingPriceNewValue = (decimal?)agentSellingPrice["agentValue"] ?? 0;
                 var partnerCommissionValue = (decimal?)partnerCommission["value"] ?? 0;
-                var partnerCommissionNewValue = (decimal?)partnerCommission["supplierValue"] ?? 0;
+                var partnerCommissionNewValue = (decimal?)partnerCommission["agentValue"] ?? 0;
 
                 var grossPriceValue = agentSellingPriceValue + partnerCommissionValue;
                 var grossPriceNewValue = agentSellingPriceNewValue + partnerCommissionNewValue;
 
                 grossPriceValue = Math.Round(grossPriceValue, 2);
+                string grossCurrency = agentSellingPrice["currency"].ToString();
                 grossPriceNewValue = Math.Round(grossPriceNewValue, 2);
+                string grossagentCurrency = agentSellingPrice["agentCurrency"].ToString();
 
                 // Create the 'GrossPrice' object
                 var grossPrice = new JObject
                 {
                     ["value"] = grossPriceValue,
-                    ["supplierValue"] = grossPriceNewValue
+                    ["currency"] = grossCurrency,
+                    ["agentValue"] = grossPriceNewValue,
+                    ["agentCurrency"] = grossagentCurrency,
                 };
 
                 // Add 'GrossPrice' to the 'prices' object
                 if (prices["GrossPrice"] == null)
                 {
-                    prices["GrossPrice"] = grossPrice;
+                    prices["Gross"] = grossPrice;
                 }
                 else
                 {
-                    prices["GrossPrice"]["value"] = grossPriceValue;
-                    prices["GrossPrice"]["supplierValue"] = grossPriceNewValue;
+                    prices["Gross"]["value"] = grossPriceValue;
+                    prices["Gross"]["currency"] = grossCurrency;
+                    prices["Gross"]["agentValue"] = grossPriceNewValue;
+                    prices["Gross"]["agentCurrency"] = grossagentCurrency;
                 }
             }
         }
@@ -337,7 +351,7 @@ namespace Rail.ApiOut.Controllers
             }
         }
 
-        public static string RemoveUnwantedProperties(string jsonString)
+        public static string RemoveUnwantedProperties(string jsonString,bool isFamilyCard)
         {
 
             #region old foreach logic
@@ -368,13 +382,21 @@ namespace Rail.ApiOut.Controllers
 
                 // Get the 'tags' array
                 JArray tags = (JArray)offer["tags"];
-
-                // Check if 'tags' is not null and contains 'family-card'
-                if (tags == null || !tags.Any(tag => tag.ToString() == "family-card"))
+                if(tags != null && isFamilyCard == true)
                 {
-                    // Remove the offer if 'family-card' tag is not present
-                    offers.RemoveAt(i);
-                    continue; // Skip processing this offer
+                    if (!tags.Any(tag => tag.ToString() == "family-card"))
+                    {                       
+                        offers.RemoveAt(i);
+                        continue; // Skip processing this offer
+                    }
+                }  
+                else if(tags != null && isFamilyCard == false)
+                {
+                    if (tags.Any(tag => tag.ToString() == "family-card"))
+                    {                        
+                        offers.RemoveAt(i);
+                        continue; // Skip processing this offer
+                    }
                 }
 
                 // Process the prices for the current offer
@@ -401,6 +423,7 @@ namespace Rail.ApiOut.Controllers
             if (prices != null)
             {
                 prices.Remove("billings");
+                
 
                 var selling = prices["selling"] as JObject;
                 if (selling != null)
